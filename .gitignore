@@ -127,3 +127,18 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# .idea files
+.idea/workspace.xml
+.idea/tasks.xml
+.idea/dictionaries
+.idea/vcs.xml
+.idea/jsLibraryMappings.xml
+
+# Tokens
+token.txt
+dynamo_accesskey.txt
+dynamo_secret.txt
+
+# Test file
+test.py
