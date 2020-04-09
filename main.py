@@ -50,6 +50,24 @@ async def get_highest_price(message):
     return {"username": max_user, "price": max_price}
 
 
+async def get_lowest_price(message):
+    est = message.created_at.astimezone(timezone("America/New_York"))
+    day_of_week = est.strftime('%A').lower()
+    response = table.query(KeyConditionExpression=Key("day_of_week").eq(day_of_week))
+    lowest_price = 999
+    lowest_user = ""
+
+    for r in response["Items"]:
+        if r["price"] < lowest_price:
+            lowest_price = r["price"]
+            lowest_user = r['username']
+
+    if lowest_price == 999:
+        return {'username': 'no one', 'price': "999"}
+
+    return {"username": lowest_user, "price": lowest_price}
+
+
 async def create_table():
     try:
         dynamo_client.create_table(
@@ -86,7 +104,6 @@ async def create_table():
 
 async def delete_table():
     dynamo_client.delete_table(TableName="stalks")
-
     time.sleep(10)
 
 
@@ -119,7 +136,8 @@ async def on_message(message):
         await message.channel.send("use !turnip XXX to set your prices for the current time \n"
                                    "use !prices to get the highest price and user with them \n"
                                    "use !setdodo to set the dodocode to get to your island but it only works if you have the highest current price \n"
-                                   "use !getdodo to get the dodocode to the island with the highest price, just remember it might be expired")
+                                   "use !getdodo to get the dodocode to the island with the highest price, just remember it might be expired \n"
+                                   "use !cleardodo to clear the dodo code if you set it and need to set a new one")
 
     if message.content.startswith('!turnip'):
         split = message.content.split()
@@ -151,22 +169,48 @@ async def on_message(message):
             await message.add_reaction("✅")
 
     if message.content.startswith('!prices'):
-        highest = await get_highest_price(message)
-        res = "The highest turnip prices right now are " + str(highest['price']) + " bells from " + highest['username']
-        await message.channel.send(res)
+        est = message.created_at.astimezone(timezone("America/New_York"))
+        day_of_week = est.strftime('%A').lower()
+
+        if day_of_week == 'sunday':
+            lowest = await get_lowest_price(message)
+            res = "The lowest turnip prices right now are " + str(lowest['price']) + " bells from " + lowest[
+                'username']
+            await message.channel.send(res)
+        else:
+            highest = await get_highest_price(message)
+            res = "The highest turnip prices right now are " + str(highest['price']) + " bells from " + highest[
+                'username']
+            await message.channel.send(res)
 
     if message.content.startswith('!setdodo'):
-        highest = await get_highest_price(message)
-        highest_user = highest['username']
-        if message.author.name == highest_user:
-            split = message.content.split()
-            if len(split) == 1:
-                return
+        est = message.created_at.astimezone(timezone("America/New_York"))
+        day_of_week = est.strftime('%A').lower()
+
+        if day_of_week == 'sunday':
+            lowest = await get_lowest_price(message)
+            lowest_user = lowest['username']
+            if message.author.name == lowest_user:
+                split = message.content.split()
+                if len(split) == 1:
+                    return
+                else:
+                    dodo_code = split[1]
+                    await message.add_reaction("✅")
             else:
-                dodo_code = split[1]
-                await message.add_reaction("✅")
+                await message.channel.send("You must have the lowest turnip prices to set the dodo code")
         else:
-            await message.channel.send("You must have the highest turnip prices to set the dodo code")
+            highest = await get_highest_price(message)
+            highest_user = highest['username']
+            if message.author.name == highest_user:
+                split = message.content.split()
+                if len(split) == 1:
+                    return
+                else:
+                    dodo_code = split[1]
+                    await message.add_reaction("✅")
+            else:
+                await message.channel.send("You must have the highest turnip prices to set the dodo code")
 
     if message.content.startswith("!getdodo"):
         if dodo_code == None:
@@ -175,13 +219,25 @@ async def on_message(message):
             await message.channel.send(dodo_code)
 
     if message.content.startswith("!cleardodo"):
-        highest = await get_highest_price(message)
-        highest_user = highest['username']
-        if message.author.name == highest_user:
-            dodo_code = None
-            await message.add_reaction("✅")
+        est = message.created_at.astimezone(timezone("America/New_York"))
+        day_of_week = est.strftime('%A').lower()
+
+        if day_of_week == 'sunday':
+            lowest = await get_lowest_price(message)
+            lowest_user = lowest['username']
+            if message.author.name == lowest_user:
+                dodo_code = None
+                await message.add_reaction("✅")
+            else:
+                await message.channel.send("You must have the lowest turnip prices to clear the dodo code")
         else:
-            await message.channel.send("You must have the highest turnip prices to clear the dodo code")
+            highest = await get_highest_price(message)
+            highest_user = highest['username']
+            if message.author.name == highest_user:
+                dodo_code = None
+                await message.add_reaction("✅")
+            else:
+                await message.channel.send("You must have the highest turnip prices to clear the dodo code")
 
 
 token = open("token.txt", 'r')
