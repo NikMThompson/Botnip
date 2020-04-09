@@ -1,6 +1,5 @@
 import discord
 import boto3.dynamodb
-from datetime import timedelta
 from pytz import timezone
 from boto3.dynamodb.conditions import Key
 import time
@@ -30,16 +29,12 @@ async def on_ready():
 
 
 async def get_highest_price(message):
-    est = message.created_at.astimezone(timezone("America/New_York")) - timedelta(hours=4)
+    est = message.created_at.astimezone(timezone("America/New_York"))
     day_of_week = est.strftime('%A').lower()
-    print("Message requested at: ", message.created_at.astimezone(timezone("America/New_York")))
-    print("EST timestamp is: ", est)
-    print("EST hour is : ", est.hour)
     if est.hour < 12:
         time_of_day = "morning"
     else:
         time_of_day = "afternoon"
-    print("time of day is: ", time_of_day)
     response = table.query(KeyConditionExpression=Key("day_of_week").eq(day_of_week))
     max_price = 0
     max_user = ""
@@ -96,7 +91,7 @@ async def delete_table():
 
 
 async def sunday_cleanup(message):
-    est = message.created_at.astimezone(timezone("America/New_York")) - timedelta(hours=4)
+    est = message.created_at.astimezone(timezone("America/New_York"))
     day_of_week = est.strftime('%A').lower()
     if day_of_week == 'sunday':
         response = table.query(KeyConditionExpression=Key("day_of_week").eq('saturday'))
@@ -131,15 +126,11 @@ async def on_message(message):
         if len(split) == 1:
             return
         else:
-            est = message.created_at.astimezone(timezone("America/New_York")) - timedelta(hours=4)
-            print("Message requested at: ", message.created_at.astimezone(timezone("America/New_York")))
-            print("EST timestamp is: ", est)
-            print("EST hour is : ", est.hour)
+            est = message.created_at.astimezone(timezone("America/New_York"))
             if est.hour < 12:
                 time_of_day = "morning"
             else:
                 time_of_day = "afternoon"
-            print("time of day is: ", time_of_day)
             day_of_week = est.strftime('%A').lower()
             username = message.author.name
             try:
