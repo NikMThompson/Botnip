@@ -174,6 +174,15 @@ async def on_message(message):
         else:
             await message.channel.send(dodo_code)
 
+    if message.content.startswith("!cleardodo"):
+        highest = await get_highest_price(message)
+        highest_user = highest['username']
+        if message.author.name == highest_user:
+            dodo_code = None
+            await message.add_reaction("✅")
+        else:
+            await message.channel.send("You must have the highest turnip prices to clear the dodo code")
+
 
 token = open("token.txt", 'r')
 
