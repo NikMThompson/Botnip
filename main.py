@@ -60,25 +60,30 @@ async def create_table():
                 {
                     'AttributeName': 'day_of_week',
                     'KeyType': 'HASH'
+                },
+                {
+                    'AttributeName': 'username',
+                    'KeyType': 'RANGE'
                 }
             ],
             AttributeDefinitions=[
                 {
                     'AttributeName': 'day_of_week',
                     'AttributeType': 'S'
+                },
+                {
+                    'AttributeName': 'username',
+                    'AttributeType': 'S'
                 }
             ],
             ProvisionedThroughput={
-                'ReadCapacityUnits': 1,
-                'WriteCapacityUnits': 1
-            },
-            StreamSpecification={
-                'StreamEnabled': False
+                'ReadCapacityUnits': 5,
+                'WriteCapacityUnits': 5
             }
         )
+        time.sleep(10)
     except dynamo_client.exceptions.ResourceInUseException:
         pass
-    time.sleep(10)
 
 
 async def delete_table():
@@ -124,7 +129,12 @@ async def on_message(message):
                 time_of_day = "afternoon"
             day_of_week = est.strftime('%A').lower()
             username = message.author.name
-            price = int(split[1])
+            price = 0
+            try:
+                price = int(split[1])
+            except ValueError:
+                print("Invalid price")
+                return
 
             table.put_item(
                 Item={
