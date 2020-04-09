@@ -117,6 +117,12 @@ async def on_message(message):
 
     await sunday_cleanup(message)
 
+    if message.content.startswith('!help'):
+        await message.channel.send("use !turnip XXX to set your prices for the current time \n"
+                                   "use !prices to get the highest price and user with them \n"
+                                   "use !setdodo to set the dodocode to get to your island but it only works if you have the highest current price \n"
+                                   "use !getdodo to get the dodocode to the island with the highest price, just remember it might be expired")
+
     if message.content.startswith('!turnip'):
         split = message.content.split()
         if len(split) == 1:
