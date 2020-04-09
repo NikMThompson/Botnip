@@ -32,22 +32,25 @@ async def on_ready():
 async def get_highest_price(message):
     est = message.created_at.astimezone(timezone("America/New_York")) - timedelta(hours=4)
     day_of_week = est.strftime('%A').lower()
+    print("Message requested at: ", message.created_at.astimezone(timezone("America/New_York")))
+    print("EST timestamp is: ", est)
+    print("EST hour is : ", est.hour)
     if est.hour < 12:
         time_of_day = "morning"
     else:
         time_of_day = "afternoon"
+    print("time of day is: ", time_of_day)
     response = table.query(KeyConditionExpression=Key("day_of_week").eq(day_of_week))
     max_price = 0
     max_user = ""
-
-
-    if response["Count"] == 0:
-        return {'username': 'no one', 'price': "0"}
 
     for r in response["Items"]:
         if r["price"] > max_price and r['time_of_day'] == time_of_day:
             max_price = r["price"]
             max_user = r['username']
+
+    if max_price == 0:
+        return {'username': 'no one', 'price': "0"}
 
     return {"username": max_user, "price": max_price}
 
@@ -129,13 +132,16 @@ async def on_message(message):
             return
         else:
             est = message.created_at.astimezone(timezone("America/New_York")) - timedelta(hours=4)
+            print("Message requested at: ", message.created_at.astimezone(timezone("America/New_York")))
+            print("EST timestamp is: ", est)
+            print("EST hour is : ", est.hour)
             if est.hour < 12:
                 time_of_day = "morning"
             else:
                 time_of_day = "afternoon"
+            print("time of day is: ", time_of_day)
             day_of_week = est.strftime('%A').lower()
             username = message.author.name
-            price = 0
             try:
                 price = int(split[1])
             except ValueError:
