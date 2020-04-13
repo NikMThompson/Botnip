@@ -71,16 +71,17 @@ async def get_lowest_price(message):
 async def create_table():
     try:
         dynamo_client.create_table(
-            TableName='stalks',
+            TableName='stalksTest',
             KeySchema=[
                 {
                     'AttributeName': 'day_of_week',
                     'KeyType': 'HASH'
                 },
                 {
-                    'AttributeName': 'username',
+                    'AttributeName': 'username_tod',
                     'KeyType': 'RANGE'
                 }
+
             ],
             AttributeDefinitions=[
                 {
@@ -88,7 +89,7 @@ async def create_table():
                     'AttributeType': 'S'
                 },
                 {
-                    'AttributeName': 'username',
+                    'AttributeName': 'username_tod',
                     'AttributeType': 'S'
                 }
             ],
@@ -160,6 +161,7 @@ async def on_message(message):
             table.put_item(
                 Item={
                     "day_of_week": day_of_week,
+                    "username_tod": username + "_" + time_of_day,
                     "username": username,
                     "time_of_day": time_of_day,
                     "price": price
@@ -213,7 +215,7 @@ async def on_message(message):
                 await message.channel.send("You must have the highest turnip prices to set the dodo code")
 
     if message.content.startswith("!getdodo"):
-        if dodo_code == None:
+        if dodo_code is None:
             await message.channel.send("The dodo code is not yet set")
         else:
             await message.channel.send(dodo_code)
