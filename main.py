@@ -2,7 +2,6 @@ import discord
 import boto3.dynamodb
 from pytz import timezone
 from boto3.dynamodb.conditions import Key
-import time
 
 dynamo_client = boto3.client('dynamodb',
                              region_name='us-east-2',
@@ -98,14 +97,14 @@ async def create_table():
                 'WriteCapacityUnits': 5
             }
         )
-        time.sleep(10)
+        while dynamo_client.describe_table(TableName=table.name)["Table"]["TableStatus"] == "CREATING":
+            pass
     except dynamo_client.exceptions.ResourceInUseException:
         pass
 
 
 async def delete_table():
-    dynamo_client.delete_table(TableName="stalks")
-    time.sleep(10)
+    dynamo_client.delete_table(TableName=table)
 
 
 async def daily_clear_dodo(message):
