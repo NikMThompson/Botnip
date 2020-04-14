@@ -108,6 +108,22 @@ async def delete_table():
     time.sleep(10)
 
 
+async def daily_clear_dodo(message):
+    global dodo_code
+    if dodo_code is not None:
+        print(dodo_code)
+        est = message.created_at.astimezone(timezone("America/New_York"))
+        response = table.query(KeyConditionExpression=Key("day_of_week").eq(est.strftime('%A').lower()))
+        print(response)
+        if response["Count"] == 0:
+            print("resetting dodo code")
+            dodo_code = None
+        else:
+            return
+    else:
+        return
+
+
 async def sunday_cleanup(message):
     est = message.created_at.astimezone(timezone("America/New_York"))
     day_of_week = est.strftime('%A').lower()
@@ -132,6 +148,7 @@ async def on_message(message):
         return
 
     await sunday_cleanup(message)
+    await daily_clear_dodo(message)
 
     if message.content.startswith('!help'):
         await message.channel.send("use !turnip XXX to set your prices for the current time \n"
