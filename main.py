@@ -149,7 +149,7 @@ async def on_message(message):
     await sunday_cleanup(message)
     await daily_clear_dodo(message)
 
-    if message.content.startswith('!help'):
+    if message.content == '!help':
         await message.channel.send("use !turnip XXX to set your prices for the current time \n"
                                    "use !prices to get the highest price and user with them \n"
                                    "use !setdodo to set the dodocode to get to your island but it only works if you have the highest current price \n"
@@ -158,7 +158,7 @@ async def on_message(message):
 
     if message.content.startswith('!turnip'):
         split = message.content.split()
-        if len(split) == 1:
+        if len(split) == 1 or split[0] != '!turnip':
             return
         else:
             est = message.created_at.astimezone(timezone("America/New_York"))
@@ -186,7 +186,7 @@ async def on_message(message):
 
             await message.add_reaction("✅")
 
-    if message.content.startswith('!prices'):
+    if message.content == '!prices':
         est = message.created_at.astimezone(timezone("America/New_York"))
         day_of_week = est.strftime('%A').lower()
 
@@ -210,7 +210,7 @@ async def on_message(message):
             lowest_user = lowest['username']
             if message.author.name == lowest_user:
                 split = message.content.split()
-                if len(split) == 1:
+                if len(split) == 1 or split[0] != '!setdodo':
                     return
                 else:
                     dodo_code = split[1]
@@ -230,13 +230,13 @@ async def on_message(message):
             else:
                 await message.channel.send("You must have the highest turnip prices to set the dodo code")
 
-    if message.content.startswith("!getdodo"):
+    if message.content == "!getdodo":
         if dodo_code is None:
             await message.channel.send("The dodo code is not yet set")
         else:
             await message.channel.send(dodo_code)
 
-    if message.content.startswith("!cleardodo"):
+    if message.content == "!cleardodo":
         est = message.created_at.astimezone(timezone("America/New_York"))
         day_of_week = est.strftime('%A').lower()
 
