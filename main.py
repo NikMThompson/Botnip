@@ -70,7 +70,7 @@ async def get_lowest_price(message):
 async def create_table():
     try:
         dynamo_client.create_table(
-            TableName='stalksTest',
+            TableName=table.name,
             KeySchema=[
                 {
                     'AttributeName': 'day_of_week',
@@ -104,7 +104,7 @@ async def create_table():
 
 
 async def delete_table():
-    dynamo_client.delete_table(TableName=table)
+    dynamo_client.delete_table(TableName=table.name)
 
 
 async def daily_clear_dodo(message):
@@ -130,7 +130,9 @@ async def sunday_cleanup(message):
         response = table.query(KeyConditionExpression=Key("day_of_week").eq('saturday'))
         if response["Count"] > 0:
             print("cleaning up")
-            await message.channel.send("Cleaning up last week's sales, one minute")
+            # commenting out this message because I like the functionality of it cleaning the table whenever someone
+            # sends a message in any channel after 12:01 AM but don't want it to send the message in random channels
+            # await message.channel.send("Cleaning up last week's sales, one minute")
             await delete_table()
             await create_table()
         else:
