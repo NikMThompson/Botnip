@@ -70,7 +70,7 @@ async def get_lowest_price(message):
 async def create_table():
     try:
         dynamo_client.create_table(
-            TableName='stalksTest',
+            TableName=table.name,
             KeySchema=[
                 {
                     'AttributeName': 'day_of_week',
@@ -103,8 +103,8 @@ async def create_table():
         pass
 
 
-async def delete_table():
-    dynamo_client.delete_table(TableName=table)
+def delete_table():
+    dynamo_client.delete_table(TableName=table.name)
 
 
 async def daily_clear_dodo(message):
@@ -129,10 +129,21 @@ async def sunday_cleanup(message):
     if day_of_week == 'sunday':
         response = table.query(KeyConditionExpression=Key("day_of_week").eq('saturday'))
         if response["Count"] > 0:
-            print("cleaning up")
-            await message.channel.send("Cleaning up last week's sales, one minute")
-            await delete_table()
-            await create_table()
+            # commenting out this message because I like the functionality of it cleaning the table whenever someone
+            # sends a message in any channel after 12:01 AM but don't want it to send the message in random channels
+            # await message.channel.send("Cleaning up last week's sales, one minute")
+            delete_table()
+            deleted = False
+            while not deleted:
+                for name in dynamo_client.list_tables()["TableNames"]:
+                    if name == table.name:
+                        deleted = False
+                    else:
+                        deleted = True
+            if deleted:
+                await create_table()
+            else:
+                pass
         else:
             pass
     else:
@@ -158,7 +169,7 @@ async def on_message(message):
 
     if message.content.startswith('!turnip'):
         split = message.content.split()
-        if len(split) == 1 or split[0] != '!turnip':
+        if len(split) == 1 or (split[0] != '!turnip' and split[0] != '!turnips'):
             return
         else:
             est = message.created_at.astimezone(timezone("America/New_York"))
