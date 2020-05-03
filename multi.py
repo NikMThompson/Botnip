@@ -108,6 +108,7 @@ class MultiModel:
         print("  Summary: ")
         print("    {:13} {:23} {:23} {:6}".format('Time', 'Price', 'Likely', 'Odds'))
         hist = self.histogram()
+
         for time, pricecounts in hist.items():
             # Gather possible prices
             pset = RangeSet()

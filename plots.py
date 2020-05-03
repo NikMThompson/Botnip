@@ -17,25 +17,18 @@ def plot_models_range(name: str,
                       models: Sequence[Model],
                       previous: ModelEnum,
                       add_points: bool = False) -> None:
-    '''
-    Plot a fill_between for all models' low and high values using an
-    alpha (transparency) equal to 1/num_models. Plot a regular line
-    for all fixed prices.
-
-    Shows ~probability of various prices based on your possible models.
-    '''
 
     colors = {
         TRIPLE: 'orange',
         SPIKE:  'green',
         DECAY:  'red',
-        BUMP:   'blue',
+        BUMP:   'purple',
     }
 
     _fig, ax = plt.subplots()
 
     # cosmetics
-    ax.set_title(f'Island {name}: current: !!ERROR!!; Last: {previous.name}')
+    ax.set_title(f"{name}'s weekly forecast: ")
     ax.set_ylabel('Turnip Price')
     ax.set_xticklabels(['Mon AM', 'Mon PM', 'Tue AM', 'Tue PM', 'Wed AM', 'Wed PM',
                         'Thu AM', 'Thu PM', 'Fri AM', 'Fri PM', 'Sat AM', 'Sat PM'])
@@ -129,7 +122,6 @@ def plot_models_range(name: str,
     # cosmetics
     msummary = '+'.join(['{}_{{{}}}^{{{:.2f}}}'.format(t, l.name, adjusted_priors[l])
                          for l, t in model_counts.items()])
-    ax.set_title(f'Island {name}: ${len(models)}_{{total}}={msummary}$, Last: {previous.name}')
 
 
 def plot_models_range_interactive(name: str,
@@ -144,8 +136,7 @@ def plot_models_range_interactive(name: str,
     Shows ~probability of various prices based on your possible models.
     '''
     plot_models_range(name, models, previous, add_points)
-    plt.show()
-
+    plt.savefig("test.png", bbox_inches='tight')
 
 def plot_models_range_data(name: str,
                            models: Sequence[Model],

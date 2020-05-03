@@ -175,4 +175,3 @@ class Archipelago:
             plot_models_range_interactive(island.name,
                                           list(island.model_group.models),
                                           island.previous_week)
-        global_plot(self.groups)
