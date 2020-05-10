@@ -1,24 +1,17 @@
 from __future__ import annotations
 
-import hashlib
-import json
 import logging
-import pickle
 from typing import Any, Dict, Generator, Optional
 
 import pydantic
 from pydantic import validator
-import yaml
 
-from model import ModelEnum
 from meta import MetaModel
-from multi import MultiModel, BumpModels
+from multi import MultiModel
 from ttime import TimePeriod
 
-from plots import plot_models_range_interactive, plot_models_range_data, global_plot
+from plots import plot_models_range_interactive
 
-
-# pylint: disable=too-few-public-methods, no-self-use, no-self-argument
 
 class Base(pydantic.BaseModel):
     class Config:
@@ -26,15 +19,7 @@ class Base(pydantic.BaseModel):
 
 
 class IslandModel(Base):
-    previous_week: ModelEnum = ModelEnum.unknown
-    initial_week: bool = False
     timeline: Dict[TimePeriod, Optional[int]]
-
-    @validator('previous_week', pre=True)
-    def coerce_model(cls, value: Any) -> Any:
-        if isinstance(value, str):
-            return ModelEnum[value.lower()]
-        return value
 
     @validator('timeline', pre=True)
     def normalize(cls, value: Any) -> Any:
@@ -44,12 +29,6 @@ class IslandModel(Base):
                 for key, price in value.items()
             }
         return value
-
-    @validator('initial_week')
-    def cajole(cls, initial_week: bool, values: Dict[str, Any]) -> Any:
-        if values['previous_week'] != ModelEnum.unknown and initial_week:
-            raise ValueError("Cannot set initial_week = True when previous_week is set")
-        return initial_week
 
     @property
     def base_price(self) -> Optional[int]:
@@ -71,12 +50,8 @@ class Island:
         return self._name
 
     @property
-    def previous_week(self) -> ModelEnum:
-        return self._data.previous_week
-
-    @property
-    def initial_week(self) -> bool:
-        return self._data.initial_week
+    def base_price(self) -> int:
+        return self._data.base_price
 
     @property
     def model_group(self) -> MultiModel:
@@ -89,10 +64,7 @@ class Island:
         logging.info(f" == {self.name} island == ")
 
         base = self._data.base_price
-        if self.initial_week:
-            self._models = BumpModels()
-        else:
-            self._models = MetaModel.blank(base)
+        self._models = MetaModel.blank(base)
 
         logging.info(f"  (%d models)  ", len(self._models))
 
@@ -105,15 +77,14 @@ class Island:
             self._models.fix_price(time, price)
 
     def plot(self):
-        return plot_models_range_data(
+        return plot_models_range_interactive(
             self.name,
-            list(self.model_group.models),
-            self.previous_week
+            list(self.model_group.models)
         )
 
-    def checksum(self):
-        data = pickle.dumps((self._data.dict(), self.name))
-        return hashlib.md5(data).hexdigest()
+    @property
+    def data(self):
+        return self._data
 
 
 class Archipelago:
@@ -123,26 +94,7 @@ class Archipelago:
                          in self._data.islands.items()}
 
     @classmethod
-    def parse_obj(cls, obj: Dict[Any, Any]) -> Archipelago:
-        return cls(ArchipelagoModel.parse_obj(obj))
-
-    @classmethod
-    def load_json(cls, data: str) -> Archipelago:
-        jdata = json.loads(data)
-        return cls.parse_obj(jdata)
-
-    @classmethod
-    def load_yaml(cls, data: str) -> Archipelago:
-        ydata = yaml.safe_load(data)
-        return cls.parse_obj(ydata)
-
-    @classmethod
     def load_file(cls, filename: str) -> Archipelago:
-        if '.yml' in filename or '.yaml' in filename:
-            with open(filename, "r") as infile:
-                ydoc = yaml.safe_load(infile)
-                return cls.parse_obj(ydoc)
-
         return cls(ArchipelagoModel.parse_file(filename))
 
     @property
@@ -163,9 +115,6 @@ class Archipelago:
             island.model_group.report()
             print('')
 
-        # The initial doesn't matter here, it's ignored.
-        print('Archipelago Summary')
-        print('-' * 80)
         archipelago = MetaModel(-1, self.groups)
         archipelago.summary()
         print('-' * 80)
@@ -173,5 +122,6 @@ class Archipelago:
     def plot(self) -> None:
         for island in self.islands:
             plot_models_range_interactive(island.name,
-                                          list(island.model_group.models),
-                                          island.previous_week)
+                                          island.data.base_price,
+                                          list(island.model_group.models)
+                                          )

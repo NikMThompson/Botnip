@@ -1,21 +1,16 @@
 #!/usr/bin/env python3
 
-from collections import Counter
-import io
-from typing import Iterable, Sequence
+from typing import Sequence
 
 import matplotlib.pyplot as plt
 
-from meta import MetaModel
-from model import TRIPLE, SPIKE, DECAY, BUMP, Model, ModelEnum
-from multi import MultiModel
+from model import TRIPLE, SPIKE, DECAY, BUMP, Model
 from ttime import TimePeriod
-from markov import MARKOV
 
 
 def plot_models_range(name: str,
+                      base_price: int,
                       models: Sequence[Model],
-                      previous: ModelEnum,
                       add_points: bool = False) -> None:
 
     colors = {
@@ -34,9 +29,10 @@ def plot_models_range(name: str,
                         'Thu AM', 'Thu PM', 'Fri AM', 'Fri PM', 'Sat AM', 'Sat PM'])
     ax.xaxis.set_ticks(range(2, 14))
     plt.xticks(rotation=45)
-    plt.grid(axis='both', which='both', ls='--')
+    plt.grid(axis='both', which='major', ls='dotted')
     ax.set_ylim(0, 660)
     plt.tight_layout()
+    plt.hlines(y=base_price, xmin=2, xmax=13, linestyles='dashed')
 
     if len(models) == 0:
         return
@@ -90,14 +86,7 @@ def plot_models_range(name: str,
 
     for chunk in continuous_priced_days:
         vals = [a_model.timeline[TimePeriod(day)].price.value for day in chunk]
-        plt.plot(chunk, vals, c='black')
-
-    model_counts = Counter(x.model_type for x in models)
-    remaining_model_types = model_counts.keys()
-    remaining_probability = sum(MARKOV[previous][rem_mod]
-                                for rem_mod in remaining_model_types)
-    adjusted_priors = {model: MARKOV[previous][model] / remaining_probability
-                       for model in model_counts.keys()}
+        plt.plot(chunk, vals, c='black', solid_capstyle='round', solid_joinstyle='round')
 
     for chunk in continuous_unpriced_days:
         if len(chunk) == 1:
@@ -108,10 +97,7 @@ def plot_models_range(name: str,
             low_vals = [model.timeline[TimePeriod(day)].price.lower for day in chunk]
             high_vals = [model.timeline[TimePeriod(day)].price.upper for day in chunk]
 
-            if previous != ModelEnum.unknown:
-                alpha = adjusted_priors[model.model_type] / model_counts[model.model_type]
-            else:
-                alpha = 1 / len(models)
+            alpha = 1 / len(models)
 
             plt.fill_between(chunk, low_vals, high_vals, alpha=alpha, color=colors[model.model_type])
 
@@ -119,14 +105,10 @@ def plot_models_range(name: str,
                 plt.scatter(chunk, low_vals, c='black', s=2)
                 plt.scatter(chunk, high_vals, c='black', s=2)
 
-    # cosmetics
-    msummary = '+'.join(['{}_{{{}}}^{{{:.2f}}}'.format(t, l.name, adjusted_priors[l])
-                         for l, t in model_counts.items()])
-
 
 def plot_models_range_interactive(name: str,
+                                  base_price: int,
                                   models: Sequence[Model],
-                                  previous: ModelEnum,
                                   add_points: bool = False) -> None:
     '''
     Plot a fill_between for all models' low and high values using an
@@ -135,45 +117,7 @@ def plot_models_range_interactive(name: str,
 
     Shows ~probability of various prices based on your possible models.
     '''
-    plot_models_range(name, models, previous, add_points)
-    plt.savefig("test.png", bbox_inches='tight')
-
-def plot_models_range_data(name: str,
-                           models: Sequence[Model],
-                           previous: ModelEnum,
-                           add_points: bool = False) -> None:
-    '''
-    Plot a fill_between for all models' low and high values using an
-    alpha (transparency) equal to 1/num_models. Plot a regular line
-    for all fixed prices.
-
-    Shows ~probability of various prices based on your possible models.
-    '''
-    plot_models_range(name, models, previous, add_points)
-    buff = io.BytesIO()
-    plt.savefig(buff)
-    return buff.getvalue()
-
-
-def global_plot(island_models: Iterable[MultiModel]) -> None:
-    '''Plot a histogram, per day, for all possible prices in the archipelago.
-
-    This isn't exactly a probability curve since the histogram isn't scaled
-    by the real probabilities.'''
-
-    arch = MetaModel(100, island_models)
-
-    hist = arch.histogram()
-
-    num_ticks = len(range(2, 14))
-    _fig, ax = plt.subplots(num_ticks, sharex=True)
-
-    for i, (time, pricecounts) in enumerate(hist.items()):
-        ax[i].hist(list(pricecounts.elements()), 50)
-        ax[i].text(.8, .5, time,
-                   horizontalalignment='center',
-                   transform=ax[i].transAxes)
-
-    ax[i].set_xlabel('Turnip Price')
-
-    plt.show()
+    plot_models_range(name, base_price, models,
+                      add_points)
+    filename = name + ".png"
+    plt.savefig(filename, bbox_inches='tight')
