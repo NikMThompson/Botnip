@@ -1,7 +1,12 @@
+import json
+from collections import OrderedDict
+
 import discord
 import boto3.dynamodb
 from pytz import timezone
-from boto3.dynamodb.conditions import Key
+from boto3.dynamodb.conditions import Key, Attr
+
+import archipelago
 
 dynamo_client = boto3.client('dynamodb',
                              region_name='us-east-2',
@@ -99,12 +104,14 @@ async def create_table():
         )
         while dynamo_client.describe_table(TableName=table.name)["Table"]["TableStatus"] == "CREATING":
             pass
+        return
     except dynamo_client.exceptions.ResourceInUseException:
         pass
 
 
 def delete_table():
     dynamo_client.delete_table(TableName=table.name)
+    pass
 
 
 async def daily_clear_dodo(message):
@@ -149,6 +156,35 @@ async def sunday_cleanup(message):
     else:
         pass
 
+async def make_json_for_user(message):
+    name = str(message.author).split('#')[0]
+    print(str(name).split('#')[0])
+    response = table.scan(FilterExpression=Attr("username").eq(name))
+    print(response)
+    outer_json = {}
+    islands_json = {}
+    name_json = {}
+    timeline_json = {}
+    convert = {'Sunday_AM': 0, 'Monday_AM': 1, 'Monday_PM': 2, 'Tuesday_AM': 3, 'Tuesday_PM': 4, 'Wednesday_AM': 5,
+               'Wednesday_PM': 6, 'Thursday_AM': 7, 'Thursday_PM': 8, 'Friday_AM': 9, 'Friday_PM': 10,
+               'Saturday_AM': 11, 'Saturday_PM': 12}
+    for item in response["Items"]:
+        time = 'PM'
+        if( item["time_of_day"] == 'morning' or item["day_of_week"] == "Sunday"):
+            time = 'AM'
+        key = item["day_of_week"].capitalize() + "_" + time
+        timeline_json[key] = int(item["price"])
+
+    timeline_json = dict(OrderedDict(sorted(timeline_json.items(), key=lambda i:convert.get(i[0]))))
+
+    name_json["timeline"] = timeline_json
+    islands_json[name] = name_json
+    outer_json["islands"] = islands_json
+    final_json = json.dumps(outer_json)
+    filename = str(message.author).split('#')[0] + ".json"
+    with open(filename, 'w') as outfile:
+        outfile.write(str(final_json))
+    return response
 
 @client.event
 async def on_message(message):
@@ -268,6 +304,13 @@ async def on_message(message):
             else:
                 await message.channel.send("You must have the highest turnip prices to clear the dodo code")
 
+    if message.content.startswith("!stonks"):
+        await make_json_for_user(message)
+        filename = str(message.author).split('#')[0] + ".json"
+        arch = archipelago.Archipelago.load_file(filename)
+        arch.plot()
+        filename = str(message.author).split('#')[0] + ".png"
+        await message.channel.send(file=discord.File(filename))
 
 token = open("token.txt", 'r')
 
