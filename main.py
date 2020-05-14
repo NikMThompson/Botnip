@@ -201,7 +201,8 @@ async def on_message(message):
                                    "use !prices to get the highest price and user with them \n"
                                    "use !setdodo to set the dodocode to get to your island but it only works if you have the highest current price \n"
                                    "use !getdodo to get the dodocode to the island with the highest price, just remember it might be expired \n"
-                                   "use !cleardodo to clear the dodo code if you set it and need to set a new one")
+                                   "use !cleardodo to clear the dodo code if you set it and need to set a new one \n"
+                                   "use !stonks to get a forecast of your prices for the week. If it finds no models that match your pattern it'll return blank.  Still a work in progress!")
 
     if message.content.startswith('!turnip'):
         split = message.content.split()
