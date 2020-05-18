@@ -5,6 +5,7 @@ import discord
 import boto3.dynamodb
 from pytz import timezone
 from boto3.dynamodb.conditions import Key, Attr
+import os
 
 import archipelago
 
@@ -310,8 +311,10 @@ async def on_message(message):
         filename = str(message.author).split('#')[0] + ".json"
         arch = archipelago.Archipelago.load_file(filename)
         arch.plot()
+        os.remove(filename)
         filename = str(message.author).split('#')[0] + ".png"
         await message.channel.send(file=discord.File(filename))
+        os.remove(filename)
 
 token = open("token.txt", 'r')
 
