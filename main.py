@@ -1,11 +1,11 @@
 import json
+import os
 from collections import OrderedDict
 
-import discord
 import boto3.dynamodb
-from pytz import timezone
+import discord
 from boto3.dynamodb.conditions import Key, Attr
-import os
+from pytz import timezone
 
 import archipelago
 
@@ -110,9 +110,8 @@ async def create_table():
         pass
 
 
-def delete_table():
+async def delete_table():
     dynamo_client.delete_table(TableName=table.name)
-    pass
 
 
 async def daily_clear_dodo(message):
@@ -140,22 +139,18 @@ async def sunday_cleanup(message):
             # commenting out this message because I like the functionality of it cleaning the table whenever someone
             # sends a message in any channel after 12:01 AM but don't want it to send the message in random channels
             # await message.channel.send("Cleaning up last week's sales, one minute")
-            delete_table()
-            deleted = False
-            while not deleted:
-                for name in dynamo_client.list_tables()["TableNames"]:
-                    if name == table.name:
-                        deleted = False
-                    else:
-                        deleted = True
-            if deleted:
-                await create_table()
-            else:
+            await delete_table()
+            try:
+                while dynamo_client.describe_table(TableName=table.name)["Table"]["TableStatus"] == "DELETING":
+                    pass
+            except dynamo_client.exceptions.ResourceNotFoundException:
                 pass
+            await create_table()
         else:
             pass
     else:
         pass
+
 
 async def make_json_for_user(message):
     name = str(message.author).split('#')[0]
@@ -171,12 +166,12 @@ async def make_json_for_user(message):
                'Saturday_AM': 11, 'Saturday_PM': 12}
     for item in response["Items"]:
         time = 'PM'
-        if( item["time_of_day"] == 'morning' or item["day_of_week"] == "Sunday"):
+        if item["time_of_day"] == 'morning' or item["day_of_week"] == "Sunday":
             time = 'AM'
         key = item["day_of_week"].capitalize() + "_" + time
         timeline_json[key] = int(item["price"])
 
-    timeline_json = dict(OrderedDict(sorted(timeline_json.items(), key=lambda i:convert.get(i[0]))))
+    timeline_json = dict(OrderedDict(sorted(timeline_json.items(), key=lambda i: convert.get(i[0]))))
 
     name_json["timeline"] = timeline_json
     islands_json[name] = name_json
@@ -186,6 +181,7 @@ async def make_json_for_user(message):
     with open(filename, 'w') as outfile:
         outfile.write(str(final_json))
     return response
+
 
 @client.event
 async def on_message(message):
@@ -315,6 +311,7 @@ async def on_message(message):
         filename = str(message.author).split('#')[0] + ".png"
         await message.channel.send(file=discord.File(filename))
         os.remove(filename)
+
 
 token = open("token.txt", 'r')
 
