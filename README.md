@@ -1,10 +1,10 @@
 # Botnip
 Discord bot for compiling, tracking, and reporting Animal Crossing New Horizons Turnip prices
 
-###Disclaimer
+### Disclaimer
 This bot currently only works in Eastern Timezone. You can change that in the main.py by replacing wherever it uses Eastern Timezone to whatever timezone you want but it currently won't work cross timezone. This is due to how Discord is sending timezone information through it's library. It is a point for possible enhancement in the future.
 
-##How to Deploy
+## How to Deploy
 The bot uses dynamoDB as provided by AWS to keep track of all of the prices for the week. You will need to create two files in order to use dyanmoDB with this bot. 
 1. **dynamo_accesskey.txt** - go to the AWS management console and then go to the IAM console. Go to Users, create a user if you do not have one already and make sure that the new user has access to dynamoDB. After your user is set up, go to the Security Credentials tab and then the Access Keys section. Create an Access Key and save the access key to dynamo_accesskey.txt.
 2. **dynamo_secret.txt** - When you create the secret key it will give you a secret access key as well. Save this to dynamo_secret.txt. You will not be able to see this key again after you close the dialog box so make sure you grab it now. 
